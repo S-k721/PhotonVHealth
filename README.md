@@ -1,11 +1,5 @@
 # PhotonVHealth - Solar Panel Efficiency Monitoring
 
----
-
-## NOTE: THIS README IS OUTDATED WHILE DEVELOPMENT IS IN PROGRESS, DON'T TAKE ANY INFORMATION FOUND HERE FOR GRANTED
-
----
-
 Welcome to PhotonVHealth for solar panel efficiency monitoring, especially useful for DIY project users. My monitor makes sure external factors such as: 
 
 * Dust Accumulation
@@ -14,46 +8,87 @@ Welcome to PhotonVHealth for solar panel efficiency monitoring, especially usefu
 
 * Overheating
 
-don't cause sudden losses in the efficiency of the panel(s) while going unnoticed.
+don't cause sudden losses in the efficiency of your panel(s) while going unnoticed.
 
 ---
 
-## Components Used:
+## Hardware:
 
-* **LM35:** for temperature
+### Components Needed:
 
-* **KY-018 LDR:** for light
+* **DS18B20 Waterproof:** Temperature
+* **KY-018 LDR:** Light Intensity + part of baseline ratio
+* **INA219:** Measure Power produced + Voltage
+* **ESP32:** Send data to website + Serial monitoring - The Brain
+* **Solar Panel:** To measure power produced + voltage
+* **Buck Converter (Optional):** Connect INA219 VIN- and VIN+ to Buck Converter + which should also be connected to Solar Panel positive
 
-* **INA219:** for power, current & voltage produced
+* **Load:** Either connected to Buck Converter or directly to solar panel - if directly: same connection steps as buck conveeter except replace buck converter with load, else no need to think much about this
 
-* **HC-06:** for bluetooth connection (to be replaced with ESP32 insha'Alah)
+* **3.3V battery/5V battery connected directly to USB entry point of ESP32:** Power ESP32 
 
-* **Arduino UNO:** the brain basically (to be replaced with ESP32 insha'Allah)
+#### REMINDER: COMMON GND FOR ALL
 
-* **A 12V 3 Watt Panel:** for testing  
-<img src = "images/panel.jpeg" height = 15% width = 15%/>
+- - -
 
-* **Soldering iron + flux:** for soldering the wires to the panel & enclosure work
+### Arduino IDE Libraries Needed:
 
-* **Jumper wires, resistors and breadboard of course**
+* **Wire.h:** Comes Preinstalled - For I2C Communication
+
+* **Adafruit_INA219.h:** Install Needed - For INA219 functions
+
+* **WiFi.h:**  Comes Preinstalled - To make sure WiFi status is OK before HTTP requests, etc
+
+* **HTTPClient.h:** Install Needed - For HTTP requests
+
+* **WiFiManager.h:**  Install Needed - To allow users to connect to a network without hardcoding credentials
+
+* **ArduinoJson.h:** To send data to server via JSON
+
+* **DallasTemperature.h:** To get temp readings
+
+* **OneWire.h:** DS18B20 functions on OneWire protocol - to initialize sensor
+
+* **WiFiClientSecure.h:** Manage required encryption for the HTTPS requests
 
 ---
 
-## Future Improvements (Insha'Allah to begin working on somewhere round April 4th):
+## Software:
 
-* Replacing **Arduino UNO & HC-06** with **ESP32**
+### Tech Used:
 
-* Replacing **LM35** with **DS18B20 TO-92 Temp Sensor**
+* **Flask Backend**
 
-* Usage of a better enclosure
+* **HTML/CSS/JS/Jinja/Bootstrap - Frontend**
 
-* Building a dashboard website to monitor trends such as power produced over time and more, renew baseline from there & set the max panel power output (Say user's panel produces 3 Watt, user enters 3 in the dashboard website as the max) from there too
+* **PostgreSQL Database on Supabase
+
+* **The Following Libraries:**
+
+    - flask: backend microframework
+    - psycopg2: PostgreSQL database
+    - os: get env variables + robots.txt
+    - dotenv: load env variables to use
+    - contextlib: database cursor automation
+    - datetime: inject year to footer + expiry of reset password tokens
+    - secrets: generate auth tokens
+    - werkzeug: hash passwords
+    - re: regex of device ids
+    - email: to make body of password reset emails
+    - smtplib: send password reset emails
+
+### Live Demo:
+
+To check out the website: **[Click Here](https://photonvhealth.onrender.com/)**
 
 ---
 
-## LICENSING
+## Licensing:
 
-This project is licensed under the GNU GPL v3 license, check the **[license file](LICENSE)** for details.
+The device itself is licensed under the MIT license - may be edited upon, improved, etc
+For further details: [Click Here](https://github.com/Skayyali3/PhotonVHealth/blob/main/Hardware/LICENSE)
+
+The website is licensed under the GNU GPL V3 license - For further details: [Click Here](https://github.com/Skayyali3/PhotonVHealth/blob/main/website/LICENSE)
 
 ## Author:
 **Saif Kayyali**
