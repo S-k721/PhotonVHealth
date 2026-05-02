@@ -89,6 +89,30 @@ def init_db():
         """)
 
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id         SERIAL PRIMARY KEY,
+            user_id    INTEGER NOT NULL,
+            endpoint   TEXT UNIQUE NOT NULL,
+            p256dh     TEXT NOT NULL,
+            auth       TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS push_notifications_log (
+            id         SERIAL PRIMARY KEY,
+            device_id  TEXT NOT NULL,
+            alert_type TEXT NOT NULL,
+            message    TEXT,
+            sent_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+        )
+        """)
+
+        cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_sensor_device_time
             ON sensor_data(device_id, recorded_at DESC);
         """)
@@ -96,6 +120,16 @@ def init_db():
         cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_devices_user
             ON devices(user_id);
+        """)
+
+        cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_push_subs_user
+            ON push_subscriptions(user_id);
+        """)
+
+        cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_push_log_device_type_time
+            ON push_notifications_log(device_id, alert_type, sent_at DESC);
         """)
 
         connection.commit()
