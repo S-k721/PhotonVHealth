@@ -12,8 +12,10 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>
 #include <WiFiClientSecure.h>
+#include <Preferences.h>
 
 WiFiClientSecure client;
+Preferences pref;
 
 #define ONE_WIRE_BUS 4
 Adafruit_INA219 ina219;
@@ -71,6 +73,13 @@ float read_temperature() {
   return tempC;
 }
 
+void connect_to_wifi() {
+  WiFiManager wm;
+  if (!wm.autoConnect("PhotonVHealth-Setup")) {
+    ESP.restart();
+  }
+}
+
 void connect_via_https(HTTPClient &http, String url, bool isJson) {
   http.begin(client, url);
   http.setTimeout(3000);
@@ -79,11 +88,35 @@ void connect_via_https(HTTPClient &http, String url, bool isJson) {
   }
 }
 
-void connect_to_wifi() {
-  WiFiManager wm;
-  if (!wm.autoConnect("PhotonVHealth-Setup")) {
-    ESP.restart();
+void register_device() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  HTTPClient http;
+  connect_via_https(http, "https://photonvhealth.onrender.com/api/register_device", true);
+
+  String json = "{";
+  json += "\"device_id\":\"" + deviceId + "\"";
+  json += "}";
+
+  int code = http.POST(json);
+
+  if (code == 200) {
+    String body = http.getString();
+    Serial.println("Register response: " + body);
+
+    StaticJsonDocument<256> doc;
+    if (deserializeJson(doc, body) == DeserializationError::Ok) {
+      apiKey = doc["apiKey"] | "";
+
+      pref.putString("api_key", apiKey);
+      Serial.println("API Key saved!");
+    }
+  } else {
+    Serial.print("Device registration failed: ");
+    Serial.println(code);
   }
+
+  http.end();
 }
 
 void data_to_server() {
@@ -118,35 +151,6 @@ void data_to_server() {
   http.end();
 }
 
-void register_device() {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  connect_via_https(http, "https://photonvhealth.onrender.com/api/register_device", true);
-
-  String json = "{";
-  json += "\"device_id\":\"" + deviceId + "\"";
-  json += "}";
-
-  int code = http.POST(json);
-
-  if (code == 200) {
-    String body = http.getString();
-    Serial.println("Register response: " + body);
-
-    StaticJsonDocument<256> doc;
-    if (deserializeJson(doc, body) == DeserializationError::Ok) {
-      apiKey = doc["apiKey"] | "";
-      Serial.println("API Key stored!");
-    }
-  } else {
-    Serial.print("Device registration failed: ");
-    Serial.println(code);
-  }
-
-  http.end();
-}
-
 void check_commands() {
   if (WiFi.status() != WL_CONNECTED) return;
 
@@ -170,6 +174,9 @@ void check_commands() {
         if (newPower > 0 && newLight > 0) {
           baselinePower = newPower;
           baselineLight = newLight;
+
+          pref.putFloat("base_pwr", baselinePower);
+          pref.putFloat("base_lgt", baselineLight);
 
           Serial.println("Manual baseline renewed!");
           Serial.print("Baseline Power: ");
@@ -232,13 +239,23 @@ void setup() {
   Serial.println();
   Serial.println("PhotonVHealth Setup: Initialized...");
 
-  uint64_t chipid = ESP.getEfuseMac();
-  char idBuffer[20];
-  sprintf(idBuffer, "PVH_%04X%08X", (uint16_t)(chipid >> 32), (uint32_t)chipid);
-  deviceId = String(idBuffer);
+  pref.begin("pvh-settings", false);
 
-  Serial.print("Device ID: ");
-  Serial.println(deviceId);
+  deviceId = pref.getString("dev_id", "");
+  if (deviceId == "") {
+    uint64_t chipid = ESP.getEfuseMac();
+    char idBuffer[20];
+    sprintf(idBuffer, "PVH_%04X%08X", (uint16_t)(chipid >> 32), (uint32_t)chipid);
+    deviceId = String(idBuffer);
+    pref.putString("dev_id", deviceId);
+    Serial.println("Generated and saved new Device ID.");
+  }
+
+  apiKey = pref.getString("api_key", "");
+  baselinePower = pref.getFloat("base_pwr", 0.0);
+  baselineLight = pref.getFloat("base_lgt", 0.0);
+
+  Serial.print("Device ID: "); Serial.println(deviceId);
 
   client.setInsecure();
 
@@ -249,7 +266,9 @@ void setup() {
 
   filteredTemp = read_temperature();
 
-  register_device();
+  if (apiKey == "") {
+    register_device();
+  }
 
   check_commands();
 }
@@ -290,14 +309,29 @@ void loop() {
     data_to_server();
 
     Serial.println("──────────────────────");
-    Serial.print("Your device's ID: "); Serial.println(deviceId);
-    Serial.print("Light Intensity: "); Serial.print(percentageLight); Serial.println(" %");
-    Serial.print("Light: "); Serial.print(adjustedLight); Serial.println(" a.u.");
-    Serial.print("Temp: "); Serial.print(tempVal); Serial.println(" °C");
-    Serial.print("Power: "); Serial.print(powerVal); Serial.println(" mW");
-    Serial.print("Voltage: "); Serial.print(voltageVal); Serial.println(" V");
-    Serial.print("Efficiency: "); Serial.print(efficiency); Serial.println(" %");
-    Serial.print("Health: "); Serial.print(health); Serial.println(" %");
+    Serial.print("Your device's ID: ");
+    Serial.println(deviceId);
+    Serial.print("Light Intensity: ");
+    Serial.print(percentageLight);
+    Serial.println(" %");
+    Serial.print("Light: ");
+    Serial.print(adjustedLight);
+    Serial.println(" a.u.");
+    Serial.print("Temp: ");
+    Serial.print(tempVal);
+    Serial.println(" °C");
+    Serial.print("Power: ");
+    Serial.print(powerVal);
+    Serial.println(" mW");
+    Serial.print("Voltage: ");
+    Serial.print(voltageVal);
+    Serial.println(" V");
+    Serial.print("Efficiency: ");
+    Serial.print(efficiency);
+    Serial.println(" %");
+    Serial.print("Health: ");
+    Serial.print(health);
+    Serial.println(" %");
 
     check_alerts();
   }
