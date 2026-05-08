@@ -28,6 +28,7 @@ app.config.update(
     SESSION_REFRESH_EACH_REQUEST=True,
     PERMANENT_SESSION_LIFETIME=3600, # in seconds
 )
+
 limiter.init_app(app)
 
 csrf = CSRFProtect(app)
