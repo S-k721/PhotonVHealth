@@ -1,3 +1,4 @@
+import threading
 from flask import Blueprint, jsonify, request, session
 from secrets import token_hex
 from hashlib import sha256
@@ -116,10 +117,10 @@ def api_data():
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (device_id, power, light, lightIntensity, temp, efficiency, health))
         
-        _post_data_alert_hook(device_id, {
-            "power": power, "light" : light,
-            "temp" : temp, "efficiency" : efficiency
-        })
+        threading.Thread(target=_post_data_alert_hook, args=(device_id, {
+            "power": power, "light": light,
+            "temp": temp, "efficiency": efficiency
+        })).start()
  
     return jsonify(success=True, health=round(health, 1))
  

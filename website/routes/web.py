@@ -53,6 +53,23 @@ def devices():
 
         if addedAlready:
             msg = "You already added this device."
+            if isAJAX:
+                return jsonify(success=False, error=msg), 409
+            return render_template(
+                "devices.html",
+                logged_in=True,
+                devices=get_user_devices(session["user_id"]),
+                error=msg
+            )
+
+        cursor.execute(
+            "SELECT 1 FROM devices WHERE device_id = %s AND user_id IS NOT NULL",
+            (deviceID,)
+        )
+        ownedByOther = cursor.fetchone()
+
+        if ownedByOther:
+            msg = "A user already owns this device."
 
             if isAJAX:
                 return jsonify(success=False, error=msg), 409
@@ -69,6 +86,7 @@ def devices():
                 INSERT INTO devices (user_id, device_id, nickname, max_power)
                 VALUES (%s, %s, %s, %s)
             """, (session["user_id"], deviceID, nickname, maxPower))
+
         except psycopg2.IntegrityError:
             msg = "A user already owns this device."
 
