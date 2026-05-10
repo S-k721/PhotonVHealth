@@ -97,6 +97,7 @@ def api_data():
         baselinePower = row['baseline_power']
     
         power = float(data.get("power", 0))
+        voltage = float(data.get("voltage", 0))
         light = float(data.get("light", 0))
         lightIntensity = float(data.get("percentage", 0))
         temp = float(data.get("temp", 0))
@@ -113,9 +114,9 @@ def api_data():
             """, (power, light, device_id))
     
         cursor.execute("""
-            INSERT INTO sensor_data (device_id, power, light, light_percentage, temp, efficiency, health)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (device_id, power, light, lightIntensity, temp, efficiency, health))
+            INSERT INTO sensor_data (device_id, power, voltage, light, light_percentage, temp, efficiency, health)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (device_id, power, voltage, light, lightIntensity, temp, efficiency, health))
         
         threading.Thread(target=_post_data_alert_hook, args=(device_id, {
             "power": power, "light": light,
@@ -139,7 +140,7 @@ def api_latest(device_id):
             return jsonify(success=False, error="Not found"), 404
     
         cursor.execute("""
-            SELECT power, light_percentage, temp, efficiency, health, recorded_at
+            SELECT power, voltage, light_percentage, temp, efficiency, health, recorded_at
             FROM sensor_data WHERE device_id = %s
             ORDER BY recorded_at DESC LIMIT 1
         """, (device_id,))
@@ -150,6 +151,7 @@ def api_latest(device_id):
  
     return jsonify(success=True, data={
         "power":      row['power'],
+        "voltage":    row["voltage"],
         "light":      row['light_percentage'],
         "temp":       row['temp'],
         "efficiency": row['efficiency'],

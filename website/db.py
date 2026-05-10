@@ -69,6 +69,7 @@ def init_db():
             id SERIAL PRIMARY KEY,
             device_id TEXT NOT NULL,
             power DOUBLE PRECISION,
+            voltage DOUBLE PRECISION,
             light DOUBLE PRECISION,
             light_percentage DOUBLE PRECISION,
             temp DOUBLE PRECISION,
@@ -111,6 +112,11 @@ def init_db():
             sent_at    TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(device_id) REFERENCES devices(device_id) ON DELETE CASCADE
         )
+        """)
+        
+        cursor.execute("""
+            ALTER TABLE sensor_data
+            ADD COLUMN IF NOT EXISTS voltage DOUBLE PRECISION;
         """)
 
         cursor.execute("""

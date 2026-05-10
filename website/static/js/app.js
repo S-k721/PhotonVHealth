@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       dot.classList.add('live');
 
-      const fields = ['power', 'temp', 'light', 'efficiency', 'health'];
+      const fields = ['power', 'voltage', 'temp', 'light', 'efficiency', 'health'];
       fields.forEach(field => {
         const el = panel.querySelector(`[data-field="${field}"]`);
         if (!el) return;

@@ -129,6 +129,7 @@ void data_to_server() {
   json += "\"device_id\":\"" + deviceId + "\",";
   json += "\"api_key\":\"" + apiKey + "\",";
   json += "\"power\":" + String(powerVal) + ",";
+  json += "\"voltage\":" + String(voltageVal) + ",";
   json += "\"light\":" + String(adjustedLight) + ",";
   json += "\"percentage\":" + String(percentageLight) + ",";
   json += "\"temp\":" + String(tempVal) + ",";
